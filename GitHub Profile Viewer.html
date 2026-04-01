@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GitHub Profile Viewer</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: white;
+      text-align: center;
+      padding: 40px;
+    }
+
+    input {
+      padding: 10px;
+      width: 250px;
+      border-radius: 8px;
+      border: none;
+      margin-right: 10px;
+      background: #1e293b;
+      color: white;
+    }
+
+    button {
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: none;
+      background: #3b82f6;
+      color: white;
+      cursor: pointer;
+    }
+
+    #card {
+      margin: 30px auto;
+      padding: 20px;
+      width: 300px;
+      border-radius: 15px;
+      background: rgba(255,255,255,0.05);
+      display: none;
+    }
+
+    img {
+      width: 100px;
+      border-radius: 50%;
+    }
+
+    .bar {
+      width: 80%;
+      height: 8px;
+      background: #334155;
+      margin: 10px auto;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .fill {
+      height: 100%;
+      background: #22c55e;
+    }
+
+    #loading {
+      display: none;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>GitHub Profile Viewer</h1>
+
+<input id="username" placeholder="Enter username">
+<button onclick="getProfile()">Search</button>
+
+<div id="loading">Loading...</div>
+
+<div id="card">
+  <img id="avatar">
+  <h2 id="name"></h2>
+
+  <p id="level"></p>
+  <p id="personality"></p>
+  <p id="experience"></p>
+
+  <p>Followers: <span id="followers"></span></p>
+  <div class="bar"><div id="followersBar" class="fill"></div></div>
+
+  <p>Repos: <span id="repos"></span></p>
+  <div class="bar"><div id="reposBar" class="fill"></div></div>
+</div>
+
+<script>
+
+// get user profile
+async function getProfile() {
+
+  let username = document.getElementById("username").value;
+
+  if (username === "") {
+    alert("Enter username first");
+    return;
+  }
+
+  document.getElementById("loading").style.display = "block";
+  document.getElementById("card").style.display = "none";
+
+  try {
+    let response = await fetch("https://api.github.com/users/" + username);
+
+    if (response.status === 404) {
+      alert("User not found");
+      document.getElementById("loading").style.display = "none";
+      return;
+    }
+
+    let data = await response.json();
+
+    updateUI(data);
+
+  } catch (error) {
+    alert("Something went wrong");
+    console.log(error);
+  }
+}
+
+
+// update UI
+function updateUI(data) {
+
+  document.getElementById("avatar").src = data.avatar_url;
+
+
+  if (data.name) {
+    document.getElementById("name").innerText = data.name;
+  } else {
+    document.getElementById("name").innerText = data.login;
+  }
+
+  document.getElementById("followers").innerText = data.followers;
+  document.getElementById("repos").innerText = data.public_repos;
+
+  setLevel(data.followers);
+  setPersonality(data.followers, data.following);
+  setExperience(data.created_at);
+  setBars(data.followers, data.public_repos);
+
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("card").style.display = "block";
+}
+
+
+// level
+function setLevel(followers) {
+
+  let level = document.getElementById("level");
+  let card = document.getElementById("card");
+
+  if (followers < 50) {
+    level.innerText = "Level: Beginner";
+    card.style.background = "green";
+  } 
+  else if (followers < 200) {
+    level.innerText = "Level: Growing";
+    card.style.background = "orange";
+  } 
+  else {
+    level.innerText = "Level: Pro";
+    card.style.background = "red";
+  }
+}
+
+
+// personality
+function setPersonality(followers, following) {
+
+  let text = "";
+
+  if (followers > following) {
+    text = "Influencer";
+  } 
+  else if (following > followers) {
+    text = "Community person";
+  } 
+  else {
+    text = "Balanced";
+  }
+
+  document.getElementById("personality").innerText = text;
+}
+
+
+// experience
+function setExperience(created_at) {
+
+  let year = new Date(created_at).getFullYear();
+  let current = new Date().getFullYear();
+
+  let diff = current - year;
+
+  if (diff <= 1) {
+    document.getElementById("experience").innerText = "Experience: New";
+  } 
+  else if (diff <= 3) {
+    document.getElementById("experience").innerText = "Experience: Medium";
+  } 
+  else {
+    document.getElementById("experience").innerText = "Experience: Experienced";
+  }
+}
+
+
+// bars
+function setBars(followers, repos) {
+
+  let fBar = document.getElementById("followersBar");
+  let rBar = document.getElementById("reposBar");
+
+  let fPercent = (followers / 500) * 100;
+  let rPercent = (repos / 100) * 100;
+
+  // proper braces
+  if (fPercent > 100) {
+    fPercent = 100;
+  }
+
+  if (rPercent > 100) {
+    rPercent = 100;
+  }
+
+  fBar.style.width = fPercent + "%";
+  rBar.style.width = rPercent + "%";
+}
+
+
+// enter key
+document.getElementById("username").addEventListener("keypress", function(e) {
+  if (e.key === "Enter") {
+    getProfile();
+  }
+});
+
+</script>
+
+</body>
+</html>
